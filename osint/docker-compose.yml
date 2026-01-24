@@ -8,7 +8,7 @@ networks:
 
 services:
   spiderfoot:
-    image: ghcr.io/poppopjmp/spiderfoot:v5.2.7
+    image: ghcr.io/poppopjmp/spiderfoot:v5.3.3
     volumes:
       - spiderfoot-data:/var/lib/spiderfoot
       - /data/osint/sspiderfoot/new_directory:/var/lib/spiderfoot/new_directory
