@@ -553,7 +553,7 @@ services:
     environment:
       - DATABASE_URL=${ARR_DASHBOARD_DATABASE_URL}
     volumes:
-      - /data/autopirate/arr-dashboard:/app/data
+      - /data/autopirate/arr-dashboard:/config
     ports:
       - 3004:3000
     restart: unless-stopped
