@@ -115,7 +115,7 @@ services:
       - monitor-net
 
   mongo:
-    image: mongo:4.4
+    image: mongo:8.2
     container_name: mongodb
     restart: always
     volumes:
