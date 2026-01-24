@@ -86,7 +86,7 @@ services:
       - NETRONOME__DB_SSLMODE=disable
     volumes:
       - /data/monitor/speedtest:/data
-      - ${MNT_CONFIGS}/git/monitor/confs/netronome/librespeed-servers.json:/data/netronome/librespeed-servers.json:ro
+      - ${MNT_CONFIGS}/git/confs/monitor/confs/netronome/librespeed-servers.json:/data/netronome/librespeed-servers.json:ro
     restart: unless-stopped
     labels:
       # Push through Traefik
@@ -112,7 +112,7 @@ services:
     #ports:
     #  - "9427:9427"
     volumes:
-      - ${MNT_CONFIGS}/git/monitor/confs/ping_exporter:/config:ro
+      - ${MNT_CONFIGS}/git/confs/monitor/confs/ping_exporter:/config:ro
     networks:
       - monitor-net
 
