@@ -434,7 +434,7 @@ services:
     restart: unless-stopped
 
   tachidesk:
-    image: ghcr.io/suwayomi/tachidesk:v2.1.2060
+    image: ghcr.io/suwayomi/tachidesk:v2.1.2061
     container_name: tachidesk
     restart: unless-stopped
     user: 1002:1002
