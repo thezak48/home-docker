@@ -1,0 +1,220 @@
+version: "3.8"
+
+networks:
+  traefik-public:
+    external: true
+  internal:
+    external: true
+  monitor-net:
+    external: true
+
+volumes:
+  tracearr_redis_data:
+
+services:
+  grafana:
+    image: grafana/grafana-oss:12.3.1
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    user: "1001:1001"
+    environment:
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel,grafana-worldmap-panel
+    volumes:
+      - /data/monitor/grafana-data:/var/lib/grafana
+      - /data/monitor/grafana-datasources:/etc/grafana/provisioning/datasources
+    labels:
+      # Push through Traefik
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.constraint-label=traefik-public
+      # HTTPS
+      - traefik.http.routers.grafana-public-https.rule=Host(`${GRAFANA_DOMAIN}`)
+      - traefik.http.routers.grafana-public-https.entrypoints=https
+      - traefik.http.routers.grafana-public-https.tls=true
+      - traefik.http.routers.grafana-public-https.tls.certresolver=main
+      - "traefik.http.routers.grafana-public-https.service=grafana"
+      # Access Port
+      - traefik.http.services.grafana.loadbalancer.server.port=3000
+    networks:
+      - traefik-public
+      - monitor-net
+      - internal
+
+  web:
+    image: ghcr.io/analogj/scrutiny:master-web
+    container_name: scrutiny
+    restart: unless-stopped
+    ports:
+      - "8084:8080"
+    volumes:
+      - /data/monitor/scrutiny:/opt/scrutiny/config
+    environment:
+      - SCRUTINY_WEB_INFLUXDB_HOST=influxdb2
+    user: "1001:1001"
+    labels:
+      # Push through Traefik
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.constraint-label=traefik-public
+      # HTTPS
+      - traefik.http.routers.scrutiny-public-https.rule=Host(`${SCRUTINY_DOMAIN}`)
+      - traefik.http.routers.scrutiny-public-https.entrypoints=https
+      - traefik.http.routers.scrutiny-public-https.tls=true
+      - traefik.http.routers.scrutiny-public-https.tls.certresolver=main
+      - traefik.http.routers.scrutiny-public-https.service=scrutiny
+      # Access Port
+      - traefik.http.services.scrutiny.loadbalancer.server.port=8080
+    networks:
+      - monitor-net
+      - traefik-public
+
+  netronome:
+    container_name: netronome
+    image: ghcr.io/autobrr/netronome:develop
+    #ports:
+    #  - "7575:7575"
+    user: 1001:1001
+    environment:
+      - NETRONOME__DB_TYPE=${NETRONOME_DB_TYPE}
+      - NETRONOME__DB_HOST=${NETRONOME_DB_HOST}
+      - NETRONOME__DB_PORT=${NETRONOME_DB_PORT}
+      - NETRONOME__DB_USER=${NETRONOME_DB_USER}
+      - NETRONOME__DB_PASSWORD=${NETRONOME_DB_PASSWORD}
+      - NETRONOME__DB_NAME=${NETRONOME_DB_NAME}
+      - NETRONOME__DB_SSLMODE=disable
+    volumes:
+      - /data/monitor/speedtest:/data
+      - ${MNT_CONFIGS}/git/monitor/confs/netronome/librespeed-servers.json:/data/netronome/librespeed-servers.json:ro
+    restart: unless-stopped
+    labels:
+      # Push through Traefik
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.constraint-label=traefik-public
+      # HTTPS
+      - traefik.http.routers.speedy-public-https.rule=Host(`${SPEEDY_DOMAIN}`)
+      - traefik.http.routers.speedy-public-https.entrypoints=https
+      - traefik.http.routers.speedy-public-https.tls=true
+      - traefik.http.routers.speedy-public-https.tls.certresolver=main
+      - traefik.http.routers.speedy-public-https.service=speedy
+      # Access Port
+      - traefik.http.services.speedy.loadbalancer.server.port=7575
+    networks:
+      - monitor-net
+      - traefik-public
+
+  ping-exporter:
+    image: czerwonk/ping_exporter:v1.1.4
+    container_name: ping-exporter
+    restart: unless-stopped
+    #ports:
+    #  - "9427:9427"
+    volumes:
+      - ${MNT_CONFIGS}/git/monitor/confs/ping_exporter:/config:ro
+    networks:
+      - monitor-net
+
+  varken:
+    image: ghcr.io/thezak48/varken:develop
+    container_name: varken
+    restart: unless-stopped
+    environment:
+      - PUID=1001
+      - PGID=1001
+      - UMASK=002
+      - TZ=Europe/London
+    volumes:
+      - /data/monitor/varken:/config
+    networks:
+      - monitor-net
+
+  sonarr-exporter:
+    image: ghcr.io/onedr0p/exportarr:v2.3.0
+    container_name: sonarr-exporter
+    command: ["sonarr"]
+    environment:
+      PORT: 9707
+      URL: "${SONARR_URL}"
+      APIKEY: "${EXPORTARR_APIKEY}"
+    networks:
+      - monitor-net
+    restart: unless-stopped
+
+  anime-exporter:
+    image: ghcr.io/onedr0p/exportarr:v2.3.0
+    container_name: anime-exporter
+    command: ["sonarr"]
+    environment:
+      PORT: 9707
+      URL: "${ANIME_URL}"
+      APIKEY: "${EXPORTARR_APIKEY}"
+    networks:
+      - monitor-net
+    restart: unless-stopped
+
+  radarr-exporter:
+    image: ghcr.io/onedr0p/exportarr:v2.3.0
+    container_name: radarr-exporter
+    command: ["radarr"]
+    environment:
+      PORT: 9707
+      URL: "${RADARR_URL}"
+      APIKEY: "${EXPORTARR_APIKEY}"
+    networks:
+      - monitor-net
+    restart: unless-stopped
+
+  tracearr:
+    image: ghcr.io/connorgallopo/tracearr:1.4.5
+    container_name: tracearr
+    #ports:
+    #  - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - HOST=0.0.0.0
+      - TZ=${TZ}
+      - DATABASE_URL=${TRACEARR_DATABASE_URL}
+      - REDIS_URL=redis://tracearr-redis:6379
+      - JWT_SECRET=${TRACEARR_JWT_SECRET}
+      - COOKIE_SECRET=${TRACEARR_COOKIE_SECRET}
+      - CORS_ORIGIN=*
+      - LOG_LEVEL=info
+      # - DATABASE_POOL_MAX=50  # Database connection pool size (default: 50)
+    depends_on:
+      tracearr-redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - internal
+      - traefik-public
+    labels:
+      # Push through Traefik
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.constraint-label=traefik-public
+      # HTTPS
+      - traefik.http.routers.tracearr-public-https.rule=Host(`${TRACEARR_DOMAIN}`)
+      - traefik.http.routers.tracearr-public-https.entrypoints=https
+      - traefik.http.routers.tracearr-public-https.tls=true
+      - traefik.http.routers.tracearr-public-https.tls.certresolver=main
+      - traefik.http.routers.tracearr-public-https.service=tracearr
+      # Access Port
+      - traefik.http.services.tracearr.loadbalancer.server.port=3000
+
+  tracearr-redis:
+    image: redis:8-alpine
+    container_name: tracearr-redis
+    command: redis-server --appendonly yes
+    volumes:
+      - tracearr_redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - internal

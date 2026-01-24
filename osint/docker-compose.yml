@@ -1,0 +1,46 @@
+networks:
+  traefik-public:
+    external: true
+  #internal:
+  #  external: true
+  monitor-net:
+    external: true
+
+services:
+  spiderfoot:
+    image: ghcr.io/poppopjmp/spiderfoot:v5.2.7
+    volumes:
+      - spiderfoot-data:/var/lib/spiderfoot
+      - /data/osint/sspiderfoot/new_directory:/var/lib/spiderfoot/new_directory
+      - spiderfoot-logs:/var/lib/spiderfoot/log
+      - spiderfoot-cache:/var/lib/spiderfoot/cache
+    container_name: spiderfoot
+    environment:
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    #ports:
+    #  - "5001:5001"
+    restart: unless-stopped
+    labels:
+      # Push through Traefik
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.constraint-label=traefik-public
+      # HTTPS
+      - traefik.http.routers.spiderfoot-public-https.rule=Host(`${SPIDERFOOT_DOMAIN}`)
+      - traefik.http.routers.spiderfoot-public-https.entrypoints=https
+      - traefik.http.routers.spiderfoot-public-https.tls=true
+      - traefik.http.routers.spiderfoot-public-https.tls.certresolver=main
+      - traefik.http.routers.spiderfoot-public-https.service=spiderfoot
+      # Access Port
+      - traefik.http.services.spiderfoot.loadbalancer.server.port=5001
+    networks:
+      - traefik-public
+      - monitor-net
+
+volumes:
+  spiderfoot-data:
+  spiderfoot-logs:
+  spiderfoot-cache:

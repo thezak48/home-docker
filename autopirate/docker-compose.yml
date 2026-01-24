@@ -1,0 +1,572 @@
+version: "3.8"
+
+networks:
+  traefik-public:
+    external: true
+  internal:
+    external: true
+  monitor-net:
+    external: true
+
+services:
+  autobrr:
+    image: ghcr.io/autobrr/autobrr:v1.71.0
+    container_name: autobrr
+    restart: unless-stopped
+    #ports:
+    #  - "7474:7474"
+    environment:
+      - PUID=1001
+      - PGID=1001
+      - UMASK=002
+      - TZ=UTC
+    volumes:
+      - /data/autopirate/autobrr:/config
+      - ${MNT_DATA}/torrents:${MNT_DATA}/torrents
+      - ${MNT_CONFIGS}/scripts:/scripts
+    labels:
+      # Push through Traefik
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.constraint-label=traefik-public
+      # HTTPS
+      - traefik.http.routers.autobrr-public-https.rule=Host(`${AUTOBRR_DOMAIN}`)
+      - traefik.http.routers.autobrr-public-https.entrypoints=https
+      - traefik.http.routers.autobrr-public-https.tls=true
+      - traefik.http.routers.autobrr-public-https.tls.certresolver=main
+      - traefik.http.routers.autobrr-public-https.service=autobrr
+      # Access Port
+      - traefik.http.services.autobrr.loadbalancer.server.port=7474
+    networks:
+      - traefik-public
+      - monitor-net
+
+  seasonpackarr:
+    image: ghcr.io/nuxencs/seasonpackarr:v0.14.0
+    container_name: seasonpackarr
+    restart: unless-stopped
+    #ports:
+    #  - 42069:42069
+    user: 1002:1002
+    environment:
+      - TZ=Europe/London
+    volumes:
+      - /data/autopirate/seasonpackarr:/config
+      - ${MNT_DATA}/torrents:/data/torrents
+    networks:
+      - traefik-public
+      - monitor-net
+
+  qbitmanage:
+    container_name: qbitmanage
+    image: ghcr.io/hotio/qbitmanage:release-4.3.0
+    restart: unless-stopped
+    environment:
+      - PUID=1002
+      - PGID=1002
+      - UMASK=002
+      - TZ=Europe/London
+      #- QBT_TRACE=true
+    volumes:
+      - ${MNT_CONFIGS}/qbitmanage:/config
+      - ${MNT_DATA}/torrents:/data/torrents
+    networks:
+      - traefik-public
+      - monitor-net
+
+  qbitmanage2:
+    container_name: qbitmanage2
+    image: ghcr.io/hotio/qbitmanage:release-4.3.0
+    restart: unless-stopped
+    environment:
+      - PUID=1002
+      - PGID=1002
+      - UMASK=002
+      - TZ=Europe/London
+      - QBT_SCHEDULE=30
+      - QBT_TAG_UPDATE=true
+    volumes:
+      - ${MNT_CONFIGS}/qbitmanage2:/config
+      - ${MNT_DATA}/torrents:/data/torrents
+    networks:
+      - traefik-public
+      - monitor-net
+
+  deemix:
+    image: ghcr.io/bambanah/deemix:latest
+    container_name: deemix
+    restart: unless-stopped
+    volumes:
+      - ${MNT_DATA}/deemix:/data/deemix
+      - /data/autopirate/deemix:/config
+    environment:
+      - PUID=1002
+      - PGID=1002
+      - UMASK_SET=002
+      - DEEMIX_SINGLE_USER=true
+    ports:
+      - 6596:6595
+    labels:
+      # Push through Traefik
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.constraint-label=traefik-public
+      # HTTPS
+      - traefik.http.routers.deemix-public-https.rule=Host(`${DEEMIX_DOMAIN}`)
+      - traefik.http.routers.deemix-public-https.entrypoints=https
+      - traefik.http.routers.deemix-public-https.tls=true
+      - traefik.http.routers.deemix-public-https.tls.certresolver=main
+      - traefik.http.routers.deemix-public-https.service=deemix
+      # Access Port
+      - traefik.http.services.deemix.loadbalancer.server.port=6595
+    networks:
+      - traefik-public
+      - internal
+
+  bazarr:
+    container_name: bazarr
+    image: ghcr.io/hotio/bazarr:latest
+    restart: unless-stopped
+    ports:
+      - 6767:6767
+    environment:
+      - PUID=1002
+      - PGID=1002
+      - TZ=Europe/London
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /data/autopirate/bazarr:/config
+      - ${MNT_DATA}/media:/data/media
+    networks:
+      - monitor-net
+      - traefik-public
+    labels:
+      # Push through Traefik
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.constraint-label=traefik-public
+      # HTTPS
+      - traefik.http.routers.bazarr-public-https.rule=Host(`${BAZARR_DOMAIN}`)
+      - traefik.http.routers.bazarr-public-https.entrypoints=https
+      - traefik.http.routers.bazarr-public-https.tls=true
+      - traefik.http.routers.bazarr-public-https.tls.certresolver=main
+      - traefik.http.routers.bazarr-public-https.service=bazarr
+      # Access Port
+      - traefik.http.services.bazarr.loadbalancer.server.port=6767
+
+  jellyseerr:
+    image: ghcr.io/fallenbagel/jellyseerr:2.7.3
+    container_name: jellyseerr
+    environment:
+      - PUID=1001
+      - PGID=1001
+      - UMASK=002
+      - TZ=Etc/UTC
+      - DB_TYPE=postgres
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${JELLYSEERR_DB_USER}
+      - DB_PASS=${JELLYSEERR_DB_PASS}
+      - DB_NAME=${JELLYSEERR_DB_NAME}
+      - DB_LOG_QUERIES=false
+    ports:
+      - 5055:5055
+    volumes:
+      - /data/autopirate/jellyseerr:/app/config
+    restart: unless-stopped
+    labels:
+      # Push through Traefik
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.constraint-label=traefik-public
+      # HTTPS
+      - traefik.http.routers.overseerr-public-https.rule=Host(`${REQUEST_DOMAIN}`) || Host(`${REQUEST_DOMAIN_ALT}`)
+      - traefik.http.routers.overseerr-public-https.entrypoints=https
+      - traefik.http.routers.overseerr-public-https.tls=true
+      - traefik.http.routers.overseerr-public-https.tls.certresolver=main
+      - traefik.http.routers.overseerr-public-https.service=overseerr
+      # Access Port
+      - traefik.http.services.overseerr.loadbalancer.server.port=5055
+    networks:
+      - traefik-public
+      - internal
+      - monitor-net
+
+  komf:
+    image: sndxr/komf:1.7.1
+    container_name: komf
+    ports:
+      - "28085:8085"
+    user: "1002:1002"
+    environment:
+      - KOMF_LOG_LEVEL=INFO
+      - TZ=Europe/London
+    volumes:
+      - /data/autopirate/komf:/config
+      - ${MNT_DATA}/media:/data/media
+    restart: unless-stopped
+    labels:
+      # Push through Traefik
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.constraint-label=traefik-public
+      # HTTPS
+      - traefik.http.routers.komf-public-https.rule=Host(`${KOMF_DOMAIN}`)
+      - traefik.http.routers.komf-public-https.entrypoints=https
+      - traefik.http.routers.komf-public-https.tls=true
+      - traefik.http.routers.komf-public-https.tls.certresolver=main
+      - traefik.http.routers.komf-public-https.service=komf
+      # Access Port
+      - traefik.http.services.komf.loadbalancer.server.port=8085
+    networks:
+      - traefik-public
+      - internal
+
+  kavita-request:
+    image: ghcr.io/ulnanlu/kavita-request:latest
+    container_name: kavita-request
+    environment:
+      - BOT_TOKEN=${KAVITA_BOT_TOKEN}
+      - QBIT_PUSH_ENABLED=True
+      - QBIT_HOST=${QBIT_HOST} # Optional
+      - QBIT_PORT=${QBIT_PORT} # Optional
+      - QBIT_USER=${QBIT_USER} # Optional
+      - QBIT_PASS=${QBIT_PASS} # Optional
+      - QBIT_CATEGORY=manga # Optional
+      - QBT_TAGS=kavita-request # Optional
+      - URL_TXT_FILE=/data/download_list.txt
+      - PING_USER_ID=102113533784752128
+    volumes:
+      - /data/autopirate/kavita-request:/config
+      - ${MNT_DATA}/media/manga-v2/:/data
+    restart: unless-stopped
+    networks:
+      - traefik-public
+
+  calibre:
+    image: lscr.io/linuxserver/calibre:8.16.2
+    container_name: calibre
+    security_opt:
+      - seccomp:unconfined
+    environment:
+      - PUID=1002
+      - PGID=1002
+      - TZ=Europe/London
+    volumes:
+      - /data/autopirate/calibre:/config
+      - ${MNT_DATA}:/data
+    ports:
+      - 48008:8080
+      #- 8181:8181
+      - 8081:8081
+    restart: unless-stopped
+    networks:
+      - traefik-public
+    labels:
+      # Push through Traefik
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.constraint-label=traefik-public
+      # HTTPS
+      - traefik.http.routers.calibre-ui-public-https.rule=Host(`${CALIBRE_UI_DOMAIN}`)
+      - traefik.http.routers.calibre-ui-public-https.entrypoints=https
+      - traefik.http.routers.calibre-ui-public-https.tls=true
+      - traefik.http.routers.calibre-ui-public-https.tls.certresolver=main
+      - "traefik.http.routers.calibre-ui-public-https.service=calibre-ui"
+      # Access Port
+      - traefik.http.services.calibre-ui.loadbalancer.server.port=8080
+      # HTTPS
+      - traefik.http.routers.calibre-public-https.rule=Host(`${CALIBRE_DOMAIN}`)
+      - traefik.http.routers.calibre-public-https.entrypoints=https
+      - traefik.http.routers.calibre-public-https.tls=true
+      - traefik.http.routers.calibre-public-https.tls.certresolver=main
+      - "traefik.http.routers.calibre-public-https.service=calibre"
+      # Access Port
+      - traefik.http.services.calibre.loadbalancer.server.port=8081
+
+  metube:
+    image: ghcr.io/alexta69/metube:latest
+    container_name: metube
+    environment:
+      - UID=1002
+      - GID=1002
+      - TZ=Europe/London
+      - TEMP_DIR=${MNT_DATA}/temp
+      - DOWNLOAD_DIR=${MNT_DATA}/media/adult/non-organised/pornhub
+      - STATE_DIR${MNT_DATA}/media/adult/non-organised/pornhub/.metube
+      - YTDL_OPTIONS={"writethumbnail":true,"postprocessors":[{"key":"FFmpegMetadata","add_metadata":"True"},{"key":"EmbedThumbnail"}]}
+    volumes:
+      - ${MNT_DATA}:${MNT_DATA}
+    #ports:
+    #  - 8081:8081
+    restart: unless-stopped
+    networks:
+      - traefik-public
+    labels:
+      # Push through Traefik
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.constraint-label=traefik-public
+      # HTTPS
+      - traefik.http.routers.metube-public-https.rule=Host(`${METUBE_DOMAIN}`)
+      - traefik.http.routers.metube-public-https.entrypoints=https
+      - traefik.http.routers.metube-public-https.tls=true
+      - traefik.http.routers.metube-public-https.tls.certresolver=main
+      - traefik.http.routers.metube-public-https.service=metube
+      # Access Port
+      - traefik.http.services.metube.loadbalancer.server.port=8081
+
+  mdblistarr:
+    container_name: mdblistarr
+    image: linaspurinis/mdblistarr:0.0527
+    environment:
+      - PORT=5353
+    volumes:
+      - /data/autopirate/mdblistarr:/usr/src/db/
+    ports:
+      - "5353:5353"
+    restart: unless-stopped
+    networks:
+      - traefik-public
+    labels:
+      # Push through Traefik
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.constraint-label=traefik-public
+      # HTTPS
+      - traefik.http.routers.mdblistarr-public-https.rule=Host(`${MDBLISTARR_DOMAIN}`)
+      - traefik.http.routers.mdblistarr-public-https.entrypoints=https
+      - traefik.http.routers.mdblistarr-public-https.tls=true
+      - traefik.http.routers.mdblistarr-public-https.tls.certresolver=main
+      - traefik.http.routers.mdblistarr-public-https.service=mdblistarr
+      # Access Port
+      - traefik.http.services.mdblistarr.loadbalancer.server.port=5353
+
+  tautulli:
+    container_name: tautulli
+    image: linuxserver/tautulli:2.16.0
+    environment:
+      - PUID=1001
+      - PGID=1001
+      - UMASK=002
+      - TZ=Europe/London
+      - DOCKER_MODS=linuxserver/mods:universal-package-install
+      - INSTALL_PIP_PACKAGES=requests|qbittorrent-api
+    volumes:
+      - /data/autopirate/tautulli:/config
+      - ${MNT_BACKUPS}/tautulli:/config/backups
+      - ${MNT_CONFIGS}/tautulli-scripts:/scripts
+    ports:
+      - "8181:8181"
+    restart: unless-stopped
+    networks:
+      - traefik-public
+      - monitor-net
+    labels:
+      # Push through Traefik
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.constraint-label=traefik-public
+      # HTTPS
+      - traefik.http.routers.tautulli-public-https.rule=Host(`${PLEXSTATS_DOMAIN}`)
+      - traefik.http.routers.tautulli-public-https.entrypoints=https
+      - traefik.http.routers.tautulli-public-https.tls=true
+      - traefik.http.routers.tautulli-public-https.tls.certresolver=main
+      - traefik.http.routers.tautulli-public-https.service=tautulli
+      # Access Port
+      - traefik.http.services.tautulli.loadbalancer.server.port=8181
+
+  tcm:
+    image: ghcr.io/titlecardmaker/titlecardmaker-webui:latest
+    container_name: titlecardmaker
+    restart: unless-stopped
+    ports:
+      - 4242:4242
+    environment:
+      - TZ=Europe/London
+    volumes:
+      - /data/autopirate/tcm:/config
+      - ${MNT_CONFIGS}/tcm
+    networks:
+      - traefik-public
+    labels:
+      # Push through Traefik
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.constraint-label=traefik-public
+      # HTTPS
+      - traefik.http.routers.tcm-public-https.rule=Host(`${TCM_DOMAIN}`)
+      - traefik.http.routers.tcm-public-https.entrypoints=https
+      - traefik.http.routers.tcm-public-https.tls=true
+      - traefik.http.routers.tcm-public-https.tls.certresolver=main
+      - traefik.http.routers.tcm-public-https.service=tcm
+      # Access Port
+      - traefik.http.services.tcm.loadbalancer.server.port=4242
+
+  #kometa-anime:
+  #  image: kometateam/kometa:v2.1.0
+  #  container_name: kometa-anime
+  #  user: "1002:1002"
+  #  env_file:
+  #    - ${MNT_CONFIGS}/kometa/ZakFlix-Anime/.env
+  #  volumes:
+  #    - ${MNT_CONFIGS}/kometa/ZakFlix-Anime:/config
+  #  restart: unless-stopped
+
+  kometa-movies:
+    image: kometateam/kometa:nightly
+    container_name: kometa-movies
+    user: "1002:1002"
+    env_file:
+      - ${MNT_CONFIGS}/kometa/ZakFlix-Films/.env
+    volumes:
+      - ${MNT_CONFIGS}/kometa/ZakFlix-Films:/config
+    restart: unless-stopped
+
+  kometa-tv:
+    image: kometateam/kometa:nightly
+    container_name: kometa-tv
+    user: "1002:1002"
+    env_file:
+      - ${MNT_CONFIGS}/kometa/ZakFlix-Shows/.env
+    volumes:
+      - ${MNT_CONFIGS}/kometa/ZakFlix-Shows:/config
+    restart: unless-stopped
+
+  tachidesk:
+    image: ghcr.io/suwayomi/tachidesk:v2.1.2060
+    container_name: tachidesk
+    restart: unless-stopped
+    user: 1002:1002
+    ports:
+      - 4567:4567
+    environment:
+      - TZ=Europe/London
+    volumes:
+      - ${MNT_DATA}/media/manga:/home/suwayomi/.local/share/Tachidesk
+    networks:
+      - traefik-public
+    labels:
+      # Push through Traefik
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.constraint-label=traefik-public
+      # HTTPS
+      - traefik.http.routers.tachidesk-public-https.rule=Host(`${TACHI_DOMAIN}`)
+      - traefik.http.routers.tachidesk-public-https.entrypoints=https
+      - traefik.http.routers.tachidesk-public-https.tls=true
+      - traefik.http.routers.tachidesk-public-https.tls.certresolver=main
+      - traefik.http.routers.tachidesk-public-https.service=tachidesk
+      # Access Port
+      - traefik.http.services.tachidesk.loadbalancer.server.port=4567
+
+  flaresolverr:
+    image: ghcr.io/flaresolverr/flaresolverr:v3.4.6
+    container_name: flaresolverr
+    environment:
+      - TZ=Europe/London
+    ports:
+      - "8191:8191"
+    restart: unless-stopped
+
+  membarr:
+    image: ghcr.io/zdn-zone/zakflix-bot:1.0.2
+    container_name: membarr
+    volumes:
+      - /data/autopirate/membarr:/app/app/config
+    environment:
+      - token=${MEMBARR_BOT_TOKEN}
+      - PUID=1001
+      - PGID=1001
+      - TZ=Europe/London
+    restart: unless-stopped
+
+  wrapperr:
+    #ports:
+    #    - '8282:8282'
+    container_name: wrapperr
+    image: aunefyren/wrapperr:latest
+    restart: unless-stopped
+    networks:
+      - traefik-public
+    volumes:
+      - /data/autopirate/wrapperr:/app/config
+
+  wizarr:
+    container_name: wizarr
+    image: ghcr.io/wizarrrr/wizarr:v2025.12.0
+    #ports:
+    #  - 5690:5690
+    volumes:
+      - /data/autopirate/wizarr/database:/data/database
+      - /data/autopirate/wizarr/wizard:/data/wizard_steps
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - DISABLE_BUILTIN_AUTH=false #Set to true ONLY if you are using another auth provider (Authelia, Authentik, etc)
+      - TZ=Europe/London #Set your timezone here
+    restart: unless-stopped
+    networks:
+      - traefik-public
+
+  recyclarr:
+    image: ghcr.io/recyclarr/recyclarr:7.5.2
+    container_name: recyclarr
+    user: 1002:1002
+    volumes:
+      - ${MNT_CONFIGS}/recyclarr:/config
+    environment:
+      - TZ=Europe/London
+
+  qui:
+    image: ghcr.io/autobrr/qui:main
+    container_name: qui
+    restart: unless-stopped
+    ports:
+      #  - "7476:7476"
+      - "9074:9074" # Metrics port
+    environment:
+      - QUI__METRICS_ENABLED=true
+      - QUI__METRICS_HOST=0.0.0.0
+      - QUI__METRICS_PORT=9074
+    volumes:
+      - /data/autopirate/qui:/config
+    networks:
+      - traefik-public
+    labels:
+      # Push through Traefik
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.constraint-label=traefik-public
+      # HTTPS
+      - traefik.http.routers.qui-public-https.rule=Host(`${QUI_DOMAIN}`)
+      - traefik.http.routers.qui-public-https.entrypoints=https
+      - traefik.http.routers.qui-public-https.tls=true
+      - traefik.http.routers.qui-public-https.tls.certresolver=main
+      - traefik.http.routers.qui-public-https.service=qui
+      # Access Port
+      - traefik.http.services.qui.loadbalancer.server.port=7476
+
+  arr-dashboard:
+    image: khak1s/arr-dashboard:2.7.0
+    container_name: arr-dashboard
+    volumes:
+      - /data/autopirate/arr-dashboard:/app/data
+    ports:
+      - 3004:3000
+    restart: unless-stopped
+    networks:
+      - traefik-public
+    labels:
+      # Push through Traefik
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.constraint-label=traefik-public
+      # HTTPS
+      - traefik.http.routers.arr-public-https.rule=Host(`${ARR_DOMAIN}`)
+      - traefik.http.routers.arr-public-https.entrypoints=https
+      - traefik.http.routers.arr-public-https.tls=true
+      - traefik.http.routers.arr-public-https.tls.certresolver=main
+      - traefik.http.routers.arr-public-https.service=arr
+      # Access Port
+      - traefik.http.services.arr.loadbalancer.server.port=3000

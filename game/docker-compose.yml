@@ -1,0 +1,47 @@
+networks:
+  traefik-public:
+    external: true
+  monitor-net:
+    external: true
+
+services:
+  gamevault-backend:
+    container_name: gamevault-backend
+    image: phalcode/gamevault-backend:latest
+    restart: unless-stopped
+    environment:
+      DB_HOST: ${DB_HOST}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      SERVER_ADMIN_USERNAME: ${SERVER_ADMIN_USERNAME}
+      SERVER_ADMIN_PASSWORD: ${SERVER_ADMIN_PASSWORD}
+      METADATA_IGDB_ENABLED: true
+      METADATA_IGDB_PRIORITY: 50
+      METADATA_IGDB_CLIENT_ID: ${METADATA_IGDB_CLIENT_ID}
+      METADATA_IGDB_CLIENT_SECRET: ${METADATA_IGDB_CLIENT_SECRET}
+    volumes:
+      # Mount the folder where your games are
+      - ${MNT_DATA}/games:/files
+      # Mount the folder where GameVault should store its media
+      - ${MNT_CONFIGS}/games:/media
+    #ports:
+    #  - 8080:8080/tcp
+    labels:
+      # Push through Traefik
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.constraint-label=traefik-public
+      # HTTPS
+      - traefik.http.routers.gamevault-public-https.rule=Host(`${GAMEVAULT_DOMAIN}`)
+      - traefik.http.routers.gamevault-public-https.entrypoints=https
+      - traefik.http.routers.gamevault-public-https.tls=true
+      - traefik.http.routers.gamevault-public-https.tls.certresolver=main
+      - traefik.http.routers.gamevault-public-https.service=gamevault
+      # Access Port
+      - traefik.http.services.gamevault.loadbalancer.server.port=8080
+    networks:
+      - traefik-public
+      - monitor-net
+
+volumes:
+  pelican-logs:

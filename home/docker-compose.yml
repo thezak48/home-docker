@@ -1,0 +1,44 @@
+networks:
+  traefik-public:
+    external: true
+
+services:
+  mealie:
+    image: ghcr.io/mealie-recipes/mealie:v3.9.2
+    container_name: mealie
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1000M #
+    volumes:
+      - /data/home/mealie:/app/data/
+    environment:
+      # Set Backend ENV Variables Here
+      ALLOW_SIGNUP: "false"
+      PUID: ${PUID}
+      PGID: ${PGID}
+      TZ: ${TZ}
+      BASE_URL: ${MEALIE_BASE_URL}
+      # Database Settings
+      DB_ENGINE: postgres
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_SERVER: ${POSTGRES_SERVER}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      POSTGRES_DB: ${POSTGRES_DB}
+    networks:
+      - traefik-public
+    labels:
+      # Push through Traefik
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.constraint-label=traefik-public
+      # HTTPS
+      - traefik.http.routers.mealie-public-https.rule=Host(`${MEALIE_DOMAIN}`)
+      - traefik.http.routers.mealie-public-https.entrypoints=https
+      - traefik.http.routers.mealie-public-https.tls=true
+      - traefik.http.routers.mealie-public-https.tls.certresolver=main
+      - traefik.http.routers.mealie-public-https.service=mealie
+      # Access Port
+      - traefik.http.services.mealie.loadbalancer.server.port=9000

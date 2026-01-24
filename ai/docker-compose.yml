@@ -1,0 +1,62 @@
+version: "3.8"
+
+networks:
+  traefik-public:
+    external: true
+  internal:
+    external: true
+
+services:
+  chatgpt-next-web:
+    container_name: chatgpt-next-web
+    image: yidadaa/chatgpt-next-web:v2.16.1
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ENABLE_BALANCE_QUERY=0
+      - DISABLE_FAST_LINK=0
+      - CUSTOM_MODELS=+llama,+claude-2,gpt-4-1106-preview:gpt-4-turbo
+    ports:
+      - 30001:3000
+    labels:
+      # Push through Traefik
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.constraint-label=traefik-public
+      # HTTPS
+      - traefik.http.routers.gpt-public-https.rule=Host(`${GPT_DOMAIN}`)
+      - traefik.http.routers.gpt-public-https.entrypoints=https
+      - traefik.http.routers.gpt-public-https.tls=true
+      - traefik.http.routers.gpt-public-https.tls.certresolver=main
+      - traefik.http.routers.gpt-public-https.service=gpt
+      # Access Port
+      - traefik.http.services.gpt.loadbalancer.server.port=3000
+    restart: unless-stopped
+    networks:
+      - traefik-public
+      - internal
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:latest
+    container_name: open-webui
+    ports:
+      - 7000:8080
+    volumes:
+      - /data/ai/open-webui:/app/backend/data
+    restart: unless-stopped
+    environment:
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL}
+    networks:
+      - traefik-public
+    labels:
+      # Push through Traefik
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.constraint-label=traefik-public
+      # HTTPS
+      - traefik.http.routers.webui-public-https.rule=Host(`${WEBUI_DOMAIN}`)
+      - traefik.http.routers.webui-public-https.entrypoints=https
+      - traefik.http.routers.webui-public-https.tls=true
+      - traefik.http.routers.webui-public-https.tls.certresolver=main
+      - traefik.http.routers.webui-public-https.service=webui
+      # Access Port
+      - traefik.http.services.webui.loadbalancer.server.port=8080

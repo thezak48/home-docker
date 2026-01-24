@@ -1,0 +1,238 @@
+version: "3.8"
+
+networks:
+  internal:
+    external: true
+  traefik-public:
+    external: true
+  monitor-net:
+    external: true
+
+services:
+  watchtower:
+    image: ghcr.io/nicholas-fedor/watchtower:1.14.0
+    container_name: watchtower
+    restart: unless-stopped
+    environment:
+      DOCKER_CONFIG: /config
+      WATCHTOWER_CLEANUP: true
+    command: --interval 3600
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /home/thezak48/.docker/config.json:/config.json
+    networks:
+      - internal
+
+  dozzle:
+    image: amir20/dozzle:v9.0.2
+    container_name: dozzle
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - traefik-public
+      - monitor-net
+      - internal
+    environment:
+      - DOZZLE_REMOTE_AGENT=${DOZZLE_REMOTE_AGENT}
+      - DOZZLE_ENABLE_ACTIONS=true
+    labels:
+      # Push through Traefik
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.constraint-label=traefik-public
+      # HTTPS
+      - traefik.http.routers.dozzle-public-https.rule=Host(`${DOZZLE_DOMAIN}`)
+      - traefik.http.routers.dozzle-public-https.entrypoints=https
+      - traefik.http.routers.dozzle-public-https.tls=true
+      - traefik.http.routers.dozzle-public-https.tls.certresolver=main
+      - "traefik.http.routers.dozzle-public-https.service=dozzle"
+      # Access Port
+      - traefik.http.services.dozzle.loadbalancer.server.port=8080
+
+  cdp:
+    image: chromedp/headless-shell:latest
+    container_name: cdp
+    restart: unless-stopped
+    ports:
+      - 9222:9222
+    networks:
+      - traefik-public
+
+  vaultwarden:
+    image: vaultwarden/server:1.35.2-alpine
+    container_name: vaultwarden
+    restart: unless-stopped
+    volumes:
+      - /data/core/vaultwarden:/data
+    environment:
+      DOMAIN: "${VAULTWARDEN_DOMAIN}"
+      DATABASE_URL: "${VAULTWARDEN_DATABASE_URL}"
+    networks:
+      - traefik-public
+    labels:
+      # Push through Traefik
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.constraint-label=traefik-public
+      # HTTPS
+      - traefik.http.routers.vault-public-https.rule=Host(`${VAULT_DOMAIN}`)
+      - traefik.http.routers.vault-public-https.entrypoints=https
+      - traefik.http.routers.vault-public-https.tls=true
+      - traefik.http.routers.vault-public-https.tls.certresolver=main
+      - traefik.http.routers.vault-public-https.service=vault
+      # Access Port
+      - traefik.http.services.vault.loadbalancer.server.port=80
+
+  gitea:
+    image: gitea/gitea:1.25.4
+    container_name: gitea
+    environment:
+      - USER_UID=${PUID}
+      - USER_GID=${PGID}
+      - GITEA__database__DB_TYPE=${GITEA_DB_TYPE}
+      - GITEA__database__HOST=${GITEA_DB_HOST}
+      - GITEA__database__NAME=${GITEA_DB_NAME}
+      - GITEA__database__USER=${GITEA_DB_USER}
+      - GITEA__database__PASSWD=${GITEA_DB_PASSWD}
+    restart: always
+    networks:
+      - traefik-public
+      - internal
+    volumes:
+      - /data/core/gitea:/data
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "222:22"
+    labels:
+      # Push through Traefik
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.constraint-label=traefik-public
+      # HTTPS
+      - traefik.http.routers.git-public-https.rule=Host(`${GIT_DOMAIN}`)
+      - traefik.http.routers.git-public-https.entrypoints=https
+      - traefik.http.routers.git-public-https.tls=true
+      - traefik.http.routers.git-public-https.tls.certresolver=main
+      - traefik.http.routers.git-public-https.service=git
+      # Access Port
+      - traefik.http.services.git.loadbalancer.server.port=3000
+
+  nebula-sync:
+    image: ghcr.io/lovelaze/nebula-sync:latest
+    container_name: nebula-sync
+    environment:
+      - PRIMARY=${NEBULA_PRIMARY}
+      - REPLICAS=${NEBULA_REPLICAS}
+      - CLIENT_SKIP_TLS_VERIFICATION=true
+      - FULL_SYNC=false
+      - RUN_GRAVITY=true
+      # Sync specific config sections only (FULL_SYNC=false)
+      - SYNC_CONFIG_DNS=true
+      - SYNC_CONFIG_DHCP=true
+      - SYNC_CONFIG_NTP=true
+      - SYNC_CONFIG_RESOLVER=true
+      - SYNC_CONFIG_DATABASE=true
+      - SYNC_CONFIG_MISC=true
+      - SYNC_CONFIG_DEBUG=true
+      - SYNC_GRAVITY_DHCP_LEASES=true
+      - SYNC_GRAVITY_GROUP=true
+      - SYNC_GRAVITY_AD_LIST=true
+      - SYNC_GRAVITY_AD_LIST_BY_GROUP=true
+      - SYNC_GRAVITY_DOMAIN_LIST=true
+      - SYNC_GRAVITY_DOMAIN_LIST_BY_GROUP=true
+      - SYNC_GRAVITY_CLIENT=true
+      - SYNC_GRAVITY_CLIENT_BY_GROUP=true
+      # Include/exclude specific keys in the config sections
+      - SYNC_CONFIG_DNS_EXCLUDE=interface
+      - CRON=0 */1 * * *
+    networks:
+      - internal
+
+  zipline:
+    container_name: zipline
+    image: ghcr.io/diced/zipline:4.4.1
+    restart: unless-stopped
+    ports:
+      - "3003:3000"
+    environment:
+      - CORE_SECRET="${ZIPLINE_CORE_SECRET}"
+      - CORE_RETURN_HTTPS_URLS=true
+      - CORE_DEFAULT_DOMAIN=${ZIPLINE_DEFAULT_DOMAIN}
+      - DATABASE_URL=${ZIPLINE_DATABASE_URL}
+      - DATASOURCE_TYPE=local
+      - FEATURES_ROBOTS_TXT=true
+      - FEATURES_USER_REGISTRATION=true
+      - FEATURES_OAUTH_REGISTRATION=true
+      - FEATURES_METRICS_ENABLED=true
+      - FEATURES_METRICS_ADMIN_ONLY=true
+      - INVITES_ENABLED=true
+      - WEBSITE_TITLE=Zipline
+      - OAUTH_DISCORD_CLIENT_ID=${OAUTH_DISCORD_CLIENT_ID}
+      - OAUTH_DISCORD_CLIENT_SECRET=${OAUTH_DISCORD_CLIENT_SECRET}
+      - OAUTH_DISCORD_REDIRECT_URI=${OAUTH_DISCORD_REDIRECT_URI}
+    volumes:
+      - "${MNT_DATA}/zipline/uploads:/zipline/uploads"
+      - "${MNT_DATA}/zipline/public:/zipline/public"
+      - "${MNT_DATA}/zipline/themes:/zipline/themes"
+    healthcheck:
+      test:
+        ["CMD", "wget", "-q", "--spider", "http://0.0.0.0:3000/api/healthcheck"]
+      interval: 15s
+      timeout: 2s
+      retries: 2
+    networks:
+      - traefik-public
+
+  adventure-log-web:
+    image: ghcr.io/seanmorley15/adventurelog-frontend:latest
+    container_name: adventurelog-frontend
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "${FRONTEND_PORT:-8015}:3000"
+    depends_on:
+      - adventure-log-server
+    networks:
+      - internal
+      - traefik-public
+    labels:
+      # Push through Traefik
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.constraint-label=traefik-public
+      # HTTPS
+      - traefik.http.routers.adventure-public-https.rule=Host(`adventure.internal.sm-dev.uk`)
+      - traefik.http.routers.adventure-public-https.entrypoints=https
+      - traefik.http.routers.adventure-public-https.tls=true
+      - traefik.http.routers.adventure-public-https.tls.certresolver=main
+      - traefik.http.routers.adventure-public-https.service=adventure
+      # Access Port
+      - traefik.http.services.adventure.loadbalancer.server.port=3000
+
+  adventure-log-server:
+    image: ghcr.io/seanmorley15/adventurelog-backend:latest
+    container_name: adventurelog-backend
+    restart: unless-stopped
+    env_file: .env
+    #ports:
+    #  - "${BACKEND_PORT:-8016}:80"
+    volumes:
+      - /data/core/adventurelog_media:/code/media/
+    networks:
+      - internal
+      - traefik-public
+    labels:
+      # Push through Traefik
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.constraint-label=traefik-public
+      # HTTPS
+      - traefik.http.routers.adventure-backend-public-https.rule=Host(`adventure-backend.internal.sm-dev.uk`)
+      - traefik.http.routers.adventure-backend-public-https.entrypoints=https
+      - traefik.http.routers.adventure-backend-public-https.tls=true
+      - traefik.http.routers.adventure-backend-public-https.tls.certresolver=main
+      - traefik.http.routers.adventure-backend-public-https.service=adventure-backend
+      # Access Port
+      - traefik.http.services.adventure-backend.loadbalancer.server.port=80
