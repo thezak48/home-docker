@@ -123,19 +123,19 @@ services:
       - traefik-public
       - internal
 
-  bazarr:
-    container_name: bazarr
+  bazarr-korean:
+    container_name: bazarr-korean
     image: ghcr.io/hotio/bazarr:latest
     restart: unless-stopped
-    ports:
-      - 6767:6767
+    #ports:
+    #  - 6767:6767
     environment:
       - PUID=1002
       - PGID=1002
       - TZ=Europe/London
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - /data/autopirate/bazarr:/config
+      - /data/autopirate/bazarr-korean:/config
       - ${MNT_DATA}/media:/data/media
     networks:
       - monitor-net
@@ -146,13 +146,44 @@ services:
       - traefik.docker.network=traefik-public
       - traefik.constraint-label=traefik-public
       # HTTPS
-      - traefik.http.routers.bazarr-public-https.rule=Host(`${BAZARR_DOMAIN}`)
-      - traefik.http.routers.bazarr-public-https.entrypoints=https
-      - traefik.http.routers.bazarr-public-https.tls=true
-      - traefik.http.routers.bazarr-public-https.tls.certresolver=main
-      - traefik.http.routers.bazarr-public-https.service=bazarr
+      - traefik.http.routers.bazarr-korean-public-https.rule=Host(`${BAZARR_KOREAN_DOMAIN}`)
+      - traefik.http.routers.bazarr-korean-public-https.entrypoints=https
+      - traefik.http.routers.bazarr-korean-public-https.tls=true
+      - traefik.http.routers.bazarr-korean-public-https.tls.certresolver=main
+      - traefik.http.routers.bazarr-korean-public-https.service=bazarr-korean
       # Access Port
-      - traefik.http.services.bazarr.loadbalancer.server.port=6767
+      - traefik.http.services.bazarr-korean.loadbalancer.server.port=6767
+
+  bazarr-chinese:
+    container_name: bazarr-chinese
+    image: ghcr.io/hotio/bazarr:latest
+    restart: unless-stopped
+    #ports:
+    #  - 6767:6767
+    environment:
+      - PUID=1002
+      - PGID=1002
+      - TZ=Europe/London
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /data/autopirate/bazarr-chinese:/config
+      - ${MNT_DATA}/media:/data/media
+    networks:
+      - monitor-net
+      - traefik-public
+    labels:
+      # Push through Traefik
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.constraint-label=traefik-public
+      # HTTPS
+      - traefik.http.routers.bazarr-chinese-public-https.rule=Host(`${BAZARR_CHINESE_DOMAIN}`)
+      - traefik.http.routers.bazarr-chinese-public-https.entrypoints=https
+      - traefik.http.routers.bazarr-chinese-public-https.tls=true
+      - traefik.http.routers.bazarr-chinese-public-https.tls.certresolver=main
+      - traefik.http.routers.bazarr-chinese-public-https.service=bazarr-chinese
+      # Access Port
+      - traefik.http.services.bazarr-chinese.loadbalancer.server.port=6767
 
   jellyseerr:
     image: ghcr.io/fallenbagel/jellyseerr:2.7.3
