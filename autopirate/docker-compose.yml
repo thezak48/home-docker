@@ -275,7 +275,7 @@ services:
       - traefik-public
 
   calibre:
-    image: lscr.io/linuxserver/calibre:8.16.2
+    image: lscr.io/linuxserver/calibre:9.0.0
     container_name: calibre
     security_opt:
       - seccomp:unconfined
