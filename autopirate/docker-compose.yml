@@ -540,14 +540,14 @@ services:
     networks:
       - traefik-public
 
-  recyclarr:
-    image: ghcr.io/recyclarr/recyclarr:7.5.2
-    container_name: recyclarr
-    user: 1002:1002
-    volumes:
-      - ${MNT_CONFIGS}/recyclarr:/config
-    environment:
-      - TZ=Europe/London
+  #recyclarr:
+  #  image: ghcr.io/recyclarr/recyclarr:7.5.2
+  #  container_name: recyclarr
+  #  user: 1002:1002
+  #  volumes:
+  #    - ${MNT_CONFIGS}/recyclarr:/config
+  #  environment:
+  #    - TZ=Europe/London
 
   qui:
     image: ghcr.io/autobrr/qui:main
