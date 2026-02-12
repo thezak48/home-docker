@@ -581,8 +581,8 @@ services:
   arr-dashboard:
     image: khak1s/arr-dashboard:2.8.0
     container_name: arr-dashboard
-    environment:
-      - DATABASE_URL=${ARR_DASHBOARD_DATABASE_URL}
+    #environment:
+    #  - DATABASE_URL=${ARR_DASHBOARD_DATABASE_URL}
     volumes:
       - /data/autopirate/arr-dashboard:/config
     ports:
