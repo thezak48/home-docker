@@ -91,7 +91,7 @@ services:
       - internal
 
   auth-server:
-    image: ghcr.io/goauthentik/server:2025.12.3
+    image: ghcr.io/goauthentik/server:2025.12.4
     container_name: authentik_server
     restart: always
     command: server
@@ -116,7 +116,7 @@ services:
       - traefik-public
 
   auth-worker:
-    image: ghcr.io/goauthentik/server:2025.12.3
+    image: ghcr.io/goauthentik/server:2025.12.4
     container_name: authentik_worker
     restart: always
     command: worker
