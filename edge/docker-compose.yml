@@ -75,7 +75,7 @@ services:
       - TUNNEL_TOKEN=${TUNNEL_TOKEN}
 
   auth-redis:
-    image: redis:8.4.0
+    image: redis:8.6.0
     container_name: authentik_redis
     command: --save 60 1 --loglevel warning
     restart: always
