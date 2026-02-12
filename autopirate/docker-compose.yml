@@ -585,8 +585,8 @@ services:
       - DATABASE_URL=${ARR_DASHBOARD_DATABASE_URL}
     volumes:
       - /data/autopirate/arr-dashboard:/config
-    #ports:
-    #  - 3004:3000
+    ports:
+      - 3004:3000
     restart: unless-stopped
     networks:
       - traefik-public
