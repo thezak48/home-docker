@@ -105,17 +105,6 @@ services:
       - monitor-net
       - traefik-public
 
-  ping-exporter:
-    image: czerwonk/ping_exporter:v1.1.5
-    container_name: ping-exporter
-    restart: unless-stopped
-    #ports:
-    #  - "9427:9427"
-    volumes:
-      - ${MNT_CONFIGS}/git/confs/monitor/confs/ping_exporter:/config:ro
-    networks:
-      - monitor-net
-
   varken:
     image: ghcr.io/thezak48/varken:develop
     container_name: varken
