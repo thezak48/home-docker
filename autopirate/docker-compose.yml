@@ -183,9 +183,9 @@ services:
       # Access Port
       - traefik.http.services.bazarr-chinese.loadbalancer.server.port=6767
 
-  jellyseerr:
-    image: ghcr.io/fallenbagel/jellyseerr:2.7.3
-    container_name: jellyseerr
+  seerr:
+    image: ghcr.io/seerr-team/seerr:v3.0.1
+    container_name: seerr
     environment:
       - PUID=1001
       - PGID=1001
