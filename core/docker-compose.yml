@@ -8,7 +8,7 @@ networks:
 
 services:
   watchtower:
-    image: ghcr.io/nicholas-fedor/watchtower:1.14.1
+    image: ghcr.io/nicholas-fedor/watchtower:1.14.2
     container_name: watchtower
     restart: unless-stopped
     environment:
