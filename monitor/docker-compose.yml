@@ -11,7 +11,7 @@ volumes:
 
 services:
   grafana:
-    image: grafana/grafana-oss:12.4.0
+    image: grafana/grafana-oss:12.4.1
     container_name: grafana
     restart: unless-stopped
     ports:
