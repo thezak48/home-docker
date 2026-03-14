@@ -83,7 +83,7 @@ services:
       - traefik.http.services.vault.loadbalancer.server.port=80
 
   gitea:
-    image: gitea/gitea:1.25.4
+    image: gitea/gitea:1.25.5
     container_name: gitea
     environment:
       - USER_UID=${PUID}
