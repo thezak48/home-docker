@@ -103,20 +103,6 @@ services:
       - monitor-net
       - traefik-public
 
-  varken:
-    image: ghcr.io/thezak48/varken:develop
-    container_name: varken
-    restart: unless-stopped
-    environment:
-      - PUID=1001
-      - PGID=1001
-      - UMASK=002
-      - TZ=Europe/London
-    volumes:
-      - /data/monitor/varken:/config
-    networks:
-      - monitor-net
-
   sonarr-exporter:
     image: ghcr.io/onedr0p/exportarr:v2.3.0
     container_name: sonarr-exporter
