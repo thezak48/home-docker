@@ -150,7 +150,7 @@ services:
 
   zipline:
     container_name: zipline
-    image: ghcr.io/diced/zipline:4.5.0
+    image: ghcr.io/diced/zipline:4.5.2
     restart: unless-stopped
     ports:
       - "3003:3000"
