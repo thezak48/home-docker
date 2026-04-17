@@ -33,7 +33,7 @@ services:
       - internal
 
   telegraf:
-    image: telegraf:1.38.0
+    image: telegraf:1.38.2
     command: -config /etc/telegraf/telegraf.conf -config-directory /etc/telegraf/telegraf.d
     container_name: telegraf
     restart: unless-stopped
