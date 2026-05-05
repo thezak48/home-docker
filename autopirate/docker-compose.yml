@@ -209,7 +209,8 @@ services:
       - traefik.docker.network=traefik-public
       - traefik.constraint-label=traefik-public
       # HTTPS
-      - traefik.http.routers.overseerr-public-https.rule=Host(`${REQUEST_DOMAIN}`) || Host(`${REQUEST_DOMAIN_ALT}`)
+      - traefik.http.routers.overseerr-public-https.rule=Host(`${REQUEST_DOMAIN}`)
+        || Host(`${REQUEST_DOMAIN_ALT}`)
       - traefik.http.routers.overseerr-public-https.entrypoints=https
       - traefik.http.routers.overseerr-public-https.tls=true
       - traefik.http.routers.overseerr-public-https.tls.certresolver=main
@@ -601,3 +602,35 @@ services:
       - traefik.http.routers.arr-public-https.service=arr
       # Access Port
       - traefik.http.services.arr.loadbalancer.server.port=3000
+
+  slskd:
+    image: slskd/slskd:0.25.1
+    environment:
+      - SLSKD_REMOTE_CONFIGURATION=true
+      - SLSKD_SHARED_DIR=/music
+      - SLSKD_DOWNLOADS_DIR=/downloads
+      - SLSKD_INCOMPLETE_DIR=/incomplete
+    ports:
+      - 50300:50300/tcp
+    volumes:
+      - /data/autopirate/slskd:/app:rw
+      - ${MNT_DATA}/media/music/Mine:/music:rw
+      - ${MNT_DATA}/slskd/downloads:/downloads:rw
+      - ${MNT_DATA}/slskd/incomplete:/incomplete:rw
+    user: 1002:1002
+    restart: unless-stopped
+    networks:
+      - traefik-public
+    labels:
+      # Push through Traefik
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.constraint-label=traefik-public
+      # HTTPS
+      - traefik.http.routers.slskd-public-https.rule=Host(`${SLSKD_DOMAIN}`)
+      - traefik.http.routers.slskd-public-https.entrypoints=https
+      - traefik.http.routers.slskd-public-https.tls=true
+      - traefik.http.routers.slskd-public-https.tls.certresolver=main
+      - traefik.http.routers.slskd-public-https.service=slskd
+      # Access Port
+      - traefik.http.services.slskd.loadbalancer.server.port=5030
