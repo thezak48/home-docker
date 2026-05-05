@@ -610,7 +610,10 @@ services:
       - SLSKD_SHARED_DIR=/music
       - SLSKD_DOWNLOADS_DIR=/downloads
       - SLSKD_INCOMPLETE_DIR=/incomplete
+      - SLSKD_SLSK_USERNAME=${SLSKD_USERNAME}
+      - SLSKD_SLSK_PASSWORD=${SLSKD_PASSWORD}
     ports:
+      - 5030:5030/tcp
       - 50300:50300/tcp
     volumes:
       - /data/autopirate/slskd:/app:rw
