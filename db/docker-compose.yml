@@ -48,7 +48,7 @@ services:
       - monitor-net
 
   influxdb:
-    image: influxdb:1.8.10
+    image: influxdb:2.9.0
     container_name: influxdb
     restart: unless-stopped
     ports:
@@ -95,7 +95,7 @@ services:
       - monitor-net
 
   influxdb2:
-    image: influxdb:2.7.3
+    image: influxdb:2.9.0
     container_name: influxdb2
     restart: unless-stopped
     ports:
