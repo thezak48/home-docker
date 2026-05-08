@@ -637,3 +637,32 @@ services:
       - traefik.http.routers.slskd-public-https.service=slskd
       # Access Port
       - traefik.http.services.slskd.loadbalancer.server.port=5030
+
+  postarr-tv:
+    container_name: postarr-tv
+    image: ghcr.io/zarskie/postarr:v0.1.0-beta.2
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/London
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - MAIN_LOG_LEVEL=INFO
+    volumes:
+      - /data/autopirate/postarr/config-tv:/config
+      - ${MNT_CONFIGS}/postarr:/posters
+      - ${MNT_CONFIGS}/kometa/ZakFlix-Shows/assets:/assets
+    networks:
+      - traefik-public
+    labels:
+      # Push through Traefik
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.constraint-label=traefik-public
+      # HTTPS
+      - traefik.http.routers.postarr-tv-public-https.rule=Host(`${POSTARR_TV_DOMAIN}`)
+      - traefik.http.routers.postarr-tv-public-https.entrypoints=https
+      - traefik.http.routers.postarr-tv-public-https.tls=true
+      - traefik.http.routers.postarr-tv-public-https.tls.certresolver=main
+      - traefik.http.routers.postarr-tv-public-https.service=postarr-tv
+      # Access Port
+      - traefik.http.services.postarr-tv.loadbalancer.server.port=8000
