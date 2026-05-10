@@ -666,3 +666,32 @@ services:
       - traefik.http.routers.postarr-tv-public-https.service=postarr-tv
       # Access Port
       - traefik.http.services.postarr-tv.loadbalancer.server.port=8000
+
+  postarr-movies:
+    container_name: postarr-movies
+    image: ghcr.io/zarskie/postarr:v0.1.0-beta.2
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/London
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - MAIN_LOG_LEVEL=INFO
+    volumes:
+      - /data/autopirate/postarr/config-movies:/config
+      - ${MNT_CONFIGS}/postarr:/posters
+      - ${MNT_CONFIGS}/kometa/ZakFlix-Films/assets:/assets
+    networks:
+      - traefik-public
+    labels:
+      # Push through Traefik
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.constraint-label=traefik-public
+      # HTTPS
+      - traefik.http.routers.postarr-movies-public-https.rule=Host(`${POSTARR_MOVIES_DOMAIN}`)
+      - traefik.http.routers.postarr-movies-public-https.entrypoints=https
+      - traefik.http.routers.postarr-movies-public-https.tls=true
+      - traefik.http.routers.postarr-movies-public-https.tls.certresolver=main
+      - traefik.http.routers.postarr-movies-public-https.service=postarr-movies
+      # Access Port
+      - traefik.http.services.postarr-movies.loadbalancer.server.port=8000
