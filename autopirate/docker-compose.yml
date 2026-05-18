@@ -666,3 +666,38 @@ services:
       - traefik.http.routers.postarr-movies-public-https.service=postarr-movies
       # Access Port
       - traefik.http.services.postarr-movies.loadbalancer.server.port=8000
+
+  lingarr:
+    image: ghcr.io/lingarr-translate/lingarr:latest # or lingarr/lingarr:latest
+    container_name: lingarr
+    restart: unless-stopped
+    user: 1002:1002
+    environment:
+      - ASPNETCORE_URLS=http://+:9876
+      - DB_CONNECTION=postgresql
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_DATABASE=lingarr
+      - DB_USERNAME=${LINGARR_USERNAME}
+      - DB_PASSWORD=${LINGARR_PASSWORD}
+    #ports:
+    #  - "9876:9876"
+    volumes:
+      - ${MNT_DATA}/media/films-v2:/movies
+      - ${MNT_DATA}/media/tv-shows-v2:/tv
+      - /data/autopirate/lingarr:/app/config
+    networks:
+      - traefik-public
+    labels:
+      # Push through Traefik
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.constraint-label=traefik-public
+      # HTTPS
+      - traefik.http.routers.lingarr-movies-public-https.rule=Host(`${LINGARR_MOVIES_DOMAIN}`)
+      - traefik.http.routers.lingarr-movies-public-https.entrypoints=https
+      - traefik.http.routers.lingarr-movies-public-https.tls=true
+      - traefik.http.routers.lingarr-movies-public-https.tls.certresolver=main
+      - traefik.http.routers.lingarr-movies-public-https.service=lingarr-movies
+      # Access Port
+      - traefik.http.services.lingarr-movies.loadbalancer.server.port=9876
