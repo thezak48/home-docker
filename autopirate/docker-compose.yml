@@ -491,7 +491,7 @@ services:
       - traefik.http.services.tachidesk.loadbalancer.server.port=4567
 
   flaresolverr:
-    image: ghcr.io/flaresolverr/flaresolverr:v3.4.6
+    image: ghcr.io/flaresolverr/flaresolverr:v3.5.0
     container_name: flaresolverr
     environment:
       - TZ=Europe/London
