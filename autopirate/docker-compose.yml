@@ -69,8 +69,7 @@ services:
       - ${MNT_CONFIGS}/qbitmanage:/config
       - ${MNT_DATA}/torrents:/data/torrents
     networks:
-      - traefik-public
-      - monitor-net
+      - internal
 
   qbitmanage2:
     container_name: qbitmanage2
@@ -87,8 +86,24 @@ services:
       - ${MNT_CONFIGS}/qbitmanage2:/config
       - ${MNT_DATA}/torrents:/data/torrents
     networks:
-      - traefik-public
-      - monitor-net
+      - internal
+
+  qbitmanage3:
+    container_name: qbitmanage3
+    image: ghcr.io/hotio/qbitmanage:release-4.3.0
+    restart: unless-stopped
+    environment:
+      - PUID=1002
+      - PGID=1002
+      - UMASK=002
+      - TZ=Europe/London
+      - QBT_SCHEDULE=30
+      - QBT_TAG_UPDATE=true
+    volumes:
+      - ${MNT_CONFIGS}/qbitmanage3:/config
+      - ${MNT_DATA}/torrents:/data/torrents
+    networks:
+      - internal
 
   deemix:
     image: ghcr.io/bambanah/deemix:latest
