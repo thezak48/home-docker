@@ -14,6 +14,7 @@ services:
       SILO_PLUGIN_CACHE_DIR: /var/lib/silo/plugins
       PORT: "8080"
       NODE_NAME: ${NODE_NAME}
+      SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in .env — generate one with openssl rand -base64 48}
     ports:
       - "${TRANSCODE_PORT:-8082}:8080"
     volumes:

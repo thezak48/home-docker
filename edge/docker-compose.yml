@@ -193,6 +193,7 @@ services:
       REDIS_URL: redis://${SILO_REDIS_HOST:-silo-redis}:${SILO_REDIS_PORT:-6379}
       SILO_PLUGIN_CACHE_DIR: /var/lib/silo/plugins
       SILO_PUBLIC_URL: https://${SILO_DOMAIN}
+      SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in .env — generate one with openssl rand -base64 48}
     volumes:
       - ${MNT_DATA}/media:${MEDIA_CONTAINER_ROOT:-/mnt/media}:ro
       - ${MNT_CONFIGS}/silo/plugins:/var/lib/silo/plugins
