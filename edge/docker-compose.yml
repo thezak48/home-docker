@@ -205,6 +205,9 @@ services:
       - traefik.enable=true
       - traefik.docker.network=traefik-public
       - traefik.constraint-label=traefik-public
+      # CSP mildleware for Silo
+      - traefik.http.routers.silo-public-https.middlewares=silo-csp
+      - "traefik.http.middlewares.silo-csp.headers.contentSecurityPolicy=default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline' blob: https://fonts.googleapis.com; img-src 'self' blob: data: http: https:; font-src 'self' blob: data: https://fonts.gstatic.com; media-src 'self' blob: http: https:; connect-src 'self' ws: wss: http: https:; worker-src 'self' blob:; frame-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self' https://discord.com https://*.discord.com"
       # HTTPS Silo
       - traefik.http.routers.silo-public-https.rule=Host(`${SILO_DOMAIN}`)
       - traefik.http.routers.silo-public-https.entrypoints=https
