@@ -197,6 +197,7 @@ services:
     volumes:
       - ${MNT_DATA}/media:${MEDIA_CONTAINER_ROOT:-/mnt/media}:ro
       - ${MNT_CONFIGS}/silo/plugins:/var/lib/silo/plugins
+      - ${MNT_CONFIGS}/silo/compat:/var/lib/silo/compat
       - ${MNT_CONFIGS}/silo/transcode:/tmp/silo-transcode
       - ${MNT_CONFIGS}/silo/catalog-seeds:/catalog-seeds:ro
       - /proc/meminfo:/host/proc/meminfo:ro
