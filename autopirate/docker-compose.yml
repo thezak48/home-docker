@@ -716,3 +716,43 @@ services:
       - traefik.http.routers.lingarr-movies-public-https.service=lingarr-movies
       # Access Port
       - traefik.http.services.lingarr-movies.loadbalancer.server.port=9876
+
+  lncrawl:
+    image: ghcr.io/lncrawl/lightnovel-crawler:4.10.0
+    container_name: lncrawl
+    restart: unless-stopped
+    user: 1002:1002
+    command: -ll server -p 8181
+    environment:
+      - DATABASE_URL=${LNCRAWL_DATABASE_URL}
+      - LNCRAWL_DATA_PATH=/data
+    volumes:
+      - ${MNT_DATA}/media/light-novels-2:/data
+    networks:
+      - traefik-public
+      - internal
+    labels:
+      # Push through Traefik
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.constraint-label=traefik-public
+      # HTTPS
+      - traefik.http.routers.lncrawl-movies-public-https.rule=Host(`${LNCRAWL_DOMAIN}`)
+      - traefik.http.routers.lncrawl-movies-public-https.entrypoints=https
+      - traefik.http.routers.lncrawl-movies-public-https.tls=true
+      - traefik.http.routers.lncrawl-movies-public-https.tls.certresolver=main
+      - traefik.http.routers.lncrawl-movies-public-https.service=lncrawl-movies
+      # Access Port
+      - traefik.http.services.lncrawl-movies.loadbalancer.server.port=8181
+
+  calibre-api:
+    image: ghcr.io/lncrawl/ebook-convert-api:v0.2.0
+    restart: unless-stopped
+    #ports:
+    #  - "8182:8000"
+    environment:
+      MAX_UPLOAD_MB: "1024"
+      MAX_CONCURRENT_JOBS: "4"
+      CONVERSION_TIMEOUT_SECONDS: "300"
+    networks:
+      - internal
