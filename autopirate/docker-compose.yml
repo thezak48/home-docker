@@ -279,6 +279,11 @@ services:
       - QBIT_PASS=${QBIT_PASS} # Optional
       - QBIT_CATEGORY=manga # Optional
       - QBT_TAGS=kavita-request # Optional
+      - LNCRAWL_ENABLED=True
+      - LNCRAWL_HOST=${LNCRAWL_HOST} # Optional
+      - LNCRAWL_PORT=${LNCRAWL_PORT} # Optional
+      - LNCRAWL_USERNAME=${LNCRAWL_USERNAME} # Optional
+      - LNCRAWL_PASSWORD=${LNCRAWL_PASSWORD} # Optional
       - URL_TXT_FILE=/data/download_list.txt
       - PING_USER_ID=102113533784752128
     volumes:
