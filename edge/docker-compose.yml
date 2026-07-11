@@ -141,7 +141,7 @@ services:
       - internal
 
   auth-geoipupdate:
-    image: maxmindinc/geoipupdate:v7.1
+    image: maxmindinc/geoipupdate:v8.0
     container_name: authentik_geoip
     restart: always
     volumes:
