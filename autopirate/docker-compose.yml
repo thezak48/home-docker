@@ -761,3 +761,37 @@ services:
       CONVERSION_TIMEOUT_SECONDS: "300"
     networks:
       - internal
+
+  droppedneedle:
+    image: ghcr.io/habirabbu/droppedneedle:latest
+    container_name: droppedneedle
+    environment:
+      - PUID=1002
+      - PGID=1002
+      - PORT=8688
+      - TZ=Etc/UTC
+      - SLSKD_DOWNLOADS_PATH=/slskd-downloads
+    ports:
+      - "8688:8688"
+    volumes:
+      - /data/autopirate/droppedneedle/config:/app/config
+      - /data/autopirate/droppedneedle/cache:/app/cache
+      - ${MNT_DATA}/media/music:/music:rw
+      - ${MNT_DATA}/slskd/downloads:/slskd-downloads:rw
+    restart: unless-stopped
+    networks:
+      - traefik-public
+      - internal
+    labels:
+      # Push through Traefik
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.constraint-label=traefik-public
+      # HTTPS
+      - traefik.http.routers.droppedneedle-public-https.rule=Host(`${DROPPEDNEEDLE_DOMAIN}`)
+      - traefik.http.routers.droppedneedle-public-https.entrypoints=https
+      - traefik.http.routers.droppedneedle-public-https.tls=true
+      - traefik.http.routers.droppedneedle-public-https.tls.certresolver=main
+      - traefik.http.routers.droppedneedle-public-https.service=droppedneedle
+      # Access Port
+      - traefik.http.services.droppedneedle.loadbalancer.server.port=8688
