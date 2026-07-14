@@ -723,7 +723,7 @@ services:
       - traefik.http.services.lingarr-movies.loadbalancer.server.port=9876
 
   lncrawl:
-    image: ghcr.io/lncrawl/lightnovel-crawler:4.11.0
+    image: ghcr.io/lncrawl/lightnovel-crawler:4.12.0
     container_name: lncrawl
     restart: unless-stopped
     user: 1002:1002
