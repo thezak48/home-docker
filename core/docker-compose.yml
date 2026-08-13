@@ -182,6 +182,19 @@ services:
       retries: 2
     networks:
       - traefik-public
+    labels:
+      # Push through Traefik
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.constraint-label=traefik-public
+      # HTTPS
+      - traefik.http.routers.zipline-public-https.rule=Host(`${ZIPLINE_DOMAIN}`)
+      - traefik.http.routers.zipline-public-https.entrypoints=https
+      - traefik.http.routers.zipline-public-https.tls=true
+      - traefik.http.routers.zipline-public-https.tls.certresolver=main
+      - traefik.http.routers.zipline-public-https.service=zipline
+      # Access Port
+      - traefik.http.services.zipline.loadbalancer.server.port=3000
 
   adventure-log-web:
     image: ghcr.io/seanmorley15/adventurelog-frontend:latest
