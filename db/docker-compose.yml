@@ -8,7 +8,7 @@ networks:
 
 services:
   adminer:
-    image: adminer:5.5.1
+    image: adminer:6.0.1
     container_name: adminer
     restart: unless-stopped
     ports:
