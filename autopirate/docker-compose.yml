@@ -834,3 +834,32 @@ services:
       - traefik.http.routers.chaptarr-public-https.service=chaptarr
       # Access Port
       - traefik.http.services.chaptarr.loadbalancer.server.port=8789
+
+  audiobookshelf:
+    image: ghcr.io/advplyr/audiobookshelf:2.36.0
+    ports:
+      - 13378:80
+    volumes:
+      - /data/autopirate/audiobookshelf/config:/config
+      - /data/autopirate/audiobookshelf/metadata:/metadata
+      - ${MNT_DATA}/media/books-audio:/data/media/books-audio
+    environment:
+      - TZ=Europe/London
+    restart: unless-stopped
+    user: 1002:1002
+    networks:
+      - traefik-public
+      - internal
+    labels:
+      # Push through Traefik
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.constraint-label=traefik-public
+      # HTTPS
+      - traefik.http.routers.audiobookshelf-public-https.rule=Host(`${AUDIOBOOKSHELF_DOMAIN}`) || Host(`${AUDIOBOOKSHELF_DOMAIN_ALT}`)
+      - traefik.http.routers.audiobookshelf-public-https.entrypoints=https
+      - traefik.http.routers.audiobookshelf-public-https.tls=true
+      - traefik.http.routers.audiobookshelf-public-https.tls.certresolver=main
+      - traefik.http.routers.audiobookshelf-public-https.service=audiobookshelf
+      # Access Port
+      - traefik.http.services.audiobookshelf.loadbalancer.server.port=80
