@@ -237,7 +237,7 @@ services:
       - monitor-net
 
   komf:
-    image: sndxr/komf:1.7.1
+    image: sndxr/komf:2.0.1
     container_name: komf
     ports:
       - "28085:8085"
