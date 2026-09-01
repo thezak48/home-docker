@@ -42,6 +42,3 @@ services:
     networks:
       - traefik-public
       - monitor-net
-
-volumes:
-  pelican-logs:
