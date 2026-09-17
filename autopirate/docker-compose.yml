@@ -492,7 +492,9 @@ services:
     environment:
       - TZ=Europe/London
     volumes:
-      - ${MNT_DATA}/media/manga:/home/suwayomi/.local/share/Tachidesk
+      - /data/autopirate/tachidesk:/home/suwayomi/.local/share/Tachidesk
+      - ${MNT_DATA}/media/mangas/normal:/home/suwayomi/.local/share/Tachidesk/downloads
+      - ${MNT_BACKUPS}/tachidesk:/home/suwayomi/.local/share/Tachidesk/backups
     networks:
       - traefik-public
     labels:
