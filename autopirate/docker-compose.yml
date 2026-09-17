@@ -509,6 +509,35 @@ services:
       # Access Port
       - traefik.http.services.tachidesk.loadbalancer.server.port=4567
 
+  spicy-tachidesk:
+    image: ghcr.io/suwayomi/tachidesk:v2.3.2361
+    container_name: spicy-tachidesk
+    restart: unless-stopped
+    user: 1002:1002
+    #ports:
+    #  - 4567:4567
+    environment:
+      - TZ=Europe/London
+    volumes:
+      - /data/autopirate/spicy-tachidesk:/home/suwayomi/.local/share/Tachidesk
+      - ${MNT_DATA}/media/mangas/spicy:/home/suwayomi/.local/share/Tachidesk/downloads
+      - ${MNT_BACKUPS}/spicy-tachidesk:/home/suwayomi/.local/share/Tachidesk/backups
+    networks:
+      - traefik-public
+    labels:
+      # Push through Traefik
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.constraint-label=traefik-public
+      # HTTPS
+      - traefik.http.routers.spicy-tachidesk-public-https.rule=Host(`${SPICY_TACHI_DOMAIN}`)
+      - traefik.http.routers.spicy-tachidesk-public-https.entrypoints=https
+      - traefik.http.routers.spicy-tachidesk-public-https.tls=true
+      - traefik.http.routers.spicy-tachidesk-public-https.tls.certresolver=main
+      - traefik.http.routers.spicy-tachidesk-public-https.service=spicy-tachidesk
+      # Access Port
+      - traefik.http.services.spicy-tachidesk.loadbalancer.server.port=4567
+
   flaresolverr:
     image: ghcr.io/flaresolverr/flaresolverr:v3.5.2
     container_name: flaresolverr
