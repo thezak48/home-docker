@@ -8,6 +8,7 @@ networks:
 
 volumes:
   tracearr_redis_data:
+  floppy_redis_data:
 
 services:
   grafana:
@@ -189,5 +190,72 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    networks:
+      - internal
+
+  floppy:
+    image: ghcr.io/dannyvfilms/floppy:26.9.24
+    container_name: floppy
+    restart: unless-stopped
+    depends_on:
+      - floppy-redis
+    environment:
+      - SECRET=${FLOPPY_SECRET}
+      - REDIS_URL=redis://floppy-redis:6379
+      - DEMO_ACCOUNT_ENABLED=False
+      - TZ=${TZ}
+      - DB_HOST=${FLOPPY_DB_HOST}
+      - DB_NAME=${FLOPPY_DB_NAME}
+      - DB_USER=${FLOPPY_DB_USER}
+      - DB_PASSWORD=${FLOPPY_DB_PASSWORD}
+      - DB_PORT=5432
+      - TMDB_API=${TMDB_API}
+      - TVDB_API_KEY=${TVDB_API_KEY}
+      - HARDCOVER_API=${HARDCOVER_API}
+      - ANILIST_ID=${ANILIST_ID}
+      - ANILIST_SECRET=${ANILIST_SECRET}
+      - TRAKT_API=${TRAKT_API}
+      - TRAKT_API_SECRET=${TRAKT_API_SECRET}
+      - SIMKL_ID=${SIMKL_ID}
+      - SIMKL_SECRET=${SIMKL_SECRET}
+      - ADMIN_ENABLED=${FLOPPY_ADMIN_ENABLED}
+      - REGISTRATION=True
+    #ports:
+    #  - "8000:8000"
+    networks:
+      - internal
+      - traefik-public
+    labels:
+      # Push through Traefik
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.constraint-label=traefik-public
+      # HTTPS
+      - traefik.http.routers.floppy-public-https.rule=Host(`${FLOPPY_DOMAIN}`)
+      - traefik.http.routers.floppy-public-https.entrypoints=https
+      - traefik.http.routers.floppy-public-https.tls=true
+      - traefik.http.routers.floppy-public-https.tls.certresolver=main
+      - traefik.http.routers.floppy-public-https.service=floppy
+      # Access Port
+      - traefik.http.services.floppy.loadbalancer.server.port=8000
+
+  floppy-redis:
+    image: redis:8-alpine
+    container_name: floppy-redis
+    restart: unless-stopped
+    command:
+      [
+        "redis-server",
+        "--appendonly",
+        "yes",
+        "--save",
+        "",
+        "--maxmemory",
+        "256mb",
+        "--maxmemory-policy",
+        "volatile-lru",
+      ]
+    volumes:
+      - floppy_redis_data:/data
     networks:
       - internal
