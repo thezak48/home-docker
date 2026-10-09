@@ -141,7 +141,7 @@ services:
     restart: unless-stopped
 
   tracearr:
-    image: ghcr.io/connorgallopo/tracearr:2.6.3
+    image: ghcr.io/connorgallopo/tracearr:2.7.1
     container_name: tracearr
     #ports:
     #  - "3000:3000"
