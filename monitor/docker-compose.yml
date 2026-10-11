@@ -9,6 +9,7 @@ networks:
 volumes:
   tracearr_redis_data:
   floppy_redis_data:
+  geoip_data:
 
 services:
   grafana:
@@ -259,3 +260,50 @@ services:
       - floppy_redis_data:/data
     networks:
       - internal
+
+  geometrikks:
+    image: ghcr.io/gilbn/geometrikks:latest
+    restart: unless-stopped
+    hostname: geometrikks
+    container_name: geometrikks
+    environment:
+      DB_HOST: ${GEOMETRIKKS_DB_HOST:-timescale_db}
+      DB_PASSWORD: ${GEOMETRIKKS_DB_PASSWORD:-geopass}
+      PUID: ${PUID:-1000}
+      PGID: ${PGID:-1000}
+      LOGPARSER_LOG_FORMATS: traefik-json
+      MAP_CARTO_API_KEY: ${MAP_CARTO_API_KEY}
+      MAXMINDDB_USER_ID: ${MAXMINDDB_USER_ID}
+      MAXMINDDB_LICENSE_KEY: ${MAXMINDDB_LICENSE_KEY}
+      APP_ADMIN_USER: ${APP_ADMIN_USER}
+      APP_ADMIN_PASSWORD: ${APP_ADMIN_PASSWORD}
+      APP_AUTH_DISABLED: false
+      APP_SESSION_SECURE: true
+    ports:
+      - "8009:8000"
+    volumes:
+      - geoip_data:/app/data/geoip
+      - ${ACCESS_LOG_DIR:-${NGINX_LOG_DIR:-/var/log/nginx}}:/var/log/access:ro
+      # Exposes the application log and login.log on the host for tools like
+      # CrowdSec/fail2ban, and persists them across container recreation.
+      - /data/monitor/geometrikks/logs:/app/logs
+    # Granian is started with --workers-kill-timeout 15; the default 10s
+    # stop timeout SIGKILLs the container mid-teardown and drops the
+    # ingestion batch still in flight.
+    stop_grace_period: 20s
+    labels:
+      # Push through Traefik
+      - traefik.enable=true
+      - traefik.docker.network=traefik-public
+      - traefik.constraint-label=traefik-public
+      # HTTPS
+      - traefik.http.routers.geometrikks-public-https.rule=Host(`${GEOMETRIKKS_DOMAIN}`)
+      - traefik.http.routers.geometrikks-public-https.entrypoints=https
+      - traefik.http.routers.geometrikks-public-https.tls=true
+      - traefik.http.routers.geometrikks-public-https.tls.certresolver=main
+      - traefik.http.routers.geometrikks-public-https.service=geometrikks
+      # Access Port
+      - traefik.http.services.geometrikks.loadbalancer.server.port=8000
+    networks:
+      - internal
+      - traefik-public

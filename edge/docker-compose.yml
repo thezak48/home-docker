@@ -25,7 +25,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ${MNT_CONFIGS}/git/confs/edge/conf/traefik:/etc/traefik
       #- /data/edge/traefik/traefik.log:/traefik.log
-      #- /data/edge/traefik/access.log:/access.log
+      - ${MNT_STORAGE}/traefik/access.log:/access.log
       - /data/edge/traefik/acme.json:/acme.json
       - ${MNT_CONFIGS}/git/confs/edge/conf/traefik/rules:/dynamic
     networks:
