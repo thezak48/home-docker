@@ -654,7 +654,7 @@ services:
       - traefik.http.services.arr.loadbalancer.server.port=3000
 
   slskd:
-    image: slskd/slskd:0.26.0
+    image: slskd/slskd:0.26.1
     environment:
       - SLSKD_REMOTE_CONFIGURATION=true
       - SLSKD_SHARED_DIR=/music
