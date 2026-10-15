@@ -11,7 +11,7 @@ volumes:
 
 services:
   adminer:
-    image: adminer:6.1.1
+    image: adminer:6.1.2
     container_name: adminer
     restart: unless-stopped
     ports:
