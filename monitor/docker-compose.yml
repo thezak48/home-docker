@@ -195,7 +195,7 @@ services:
       - internal
 
   floppy:
-    image: ghcr.io/dannyvfilms/floppy:26.10.15
+    image: ghcr.io/dannyvfilms/floppy:26.10.22
     container_name: floppy
     restart: unless-stopped
     depends_on:
