@@ -875,7 +875,7 @@ services:
       - traefik.http.services.chaptarr.loadbalancer.server.port=8789
 
   audiobookshelf:
-    image: ghcr.io/advplyr/audiobookshelf:2.37.2
+    image: ghcr.io/advplyr/audiobookshelf:2.38.0
     ports:
       - 13378:80
     volumes:
