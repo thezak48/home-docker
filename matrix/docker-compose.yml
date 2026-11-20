@@ -25,7 +25,7 @@ services:
       - public
 
   db:
-    image: postgres:18
+    image: postgres:19
     environment:
       - POSTGRES_USER=${POSTGRES_USER:-synapse}
       - POSTGRES_DB=${POSTGRES_DB:-synapse}
