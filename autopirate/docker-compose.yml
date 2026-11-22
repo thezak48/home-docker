@@ -491,7 +491,7 @@ services:
     restart: unless-stopped
 
   tachidesk:
-    image: ghcr.io/suwayomi/tachidesk:v2.4.2511
+    image: ghcr.io/suwayomi/tachidesk:v2.4.2512
     container_name: tachidesk
     restart: unless-stopped
     user: 1002:1002
@@ -520,7 +520,7 @@ services:
       - traefik.http.services.tachidesk.loadbalancer.server.port=4567
 
   spicy-tachidesk:
-    image: ghcr.io/suwayomi/tachidesk:v2.4.2511
+    image: ghcr.io/suwayomi/tachidesk:v2.4.2512
     container_name: spicy-tachidesk
     restart: unless-stopped
     user: 1002:1002
